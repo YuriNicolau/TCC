@@ -7,6 +7,8 @@
     #include <omp.h>
 #endif
 
+typedef float f_type;
+
 // use single (float) or double precision
 // according to the value passed in the compilation cmd
 #if defined(FLOAT)
