@@ -1,0 +1,7 @@
+numpy>=1.18.1
+matplotlib>=3.2.1
+segyio>=1.9.1
+scipy==1.9.2
+pytest>=6.2.2
+findiff>=0.8.9
+pytest-codeblocks>=0.10.4
