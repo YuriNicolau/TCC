@@ -46,8 +46,8 @@ compiler_options = {
         
         'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11\
                    -shared -fopenmp-targets=nvptx64-nvidia-cuda \
-                   -Xopenmp-target -march=sm_70 \
-                   -DGPU_OPENMP -DDEVICEID=3',
+                   -Xopenmp-target -march=sm_61 \
+                   -DGPU_OPENMP',
                    
         'path': '../simwave/kernel/backend/c_code/normal/gradient.cpp'
     },

@@ -584,16 +584,15 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
     f_type *us[NUM_DEVICES];
 
-    printf("AHAHAHAHAHAHA\n\n\n\n");
 
-    #pragma omp parallel num_threads(NUM_DEVICES) shared (v, grad, velocity, damp, coeff, wavelet_forward, wavelet_adjoint, src_points_interval, src_points_values, src_points_values_offset, rec_points_interval, rec_points_values, rec_points_values_offset, u)
+    #pragma omp parallel num_threads(NUM_DEVICES) shared (v, grad, velocity, damp, coeff, wavelet_forward, wavelet_adjoint, src_points_interval, src_points_values, src_points_values_offset, rec_points_interval, rec_points_values, rec_points_values_offset)
     {
         // get default device
         int device_id = omp_get_thread_num();
         int host = omp_get_initial_device();
        
-        size_t u_size = 3 * alloc_size;
-        size_t v_size = 3 * alloc_size; // prev, current, next
+        size_t u_size = 3 * domain_size;
+        size_t v_size = 3 * domain_size; // prev, current, next
         
         #pragma omp target enter data map(to: v[:v_size]) device(device_id)
         #pragma omp target enter data map(to: grad[:complete_domain_size]) device(device_id)
@@ -611,6 +610,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
         // allocates memory for u on the device
         // used by forward    
+
         us[device_id] = (f_type*) omp_target_alloc(3 * alloc_size * sizeof(f_type), device_id);
 
         f_type *u = us[device_id];
@@ -895,6 +895,8 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
         omp_target_free(snapshot_d_current, device_id);
         omp_target_free(u, device_id);
     } 
+
+    size_t v_size = 3 * alloc_size; // prev, current, next
 
     #pragma omp target exit data map(from: grad[:complete_domain_size])    
     #pragma omp target exit data map(delete: v[:v_size])
