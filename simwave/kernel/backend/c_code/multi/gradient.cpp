@@ -313,11 +313,11 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
 
 
 // forward from checkpoint
-f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_d_current, f_type *velocity, f_type *damp,
-                          f_type *wavelet, size_t wavelet_size, size_t wavelet_count,               
-                          f_type *coeff, 
+f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_d_current, f_type *d_velocity, f_type *d_damp,
+                          f_type *d_wavelet, size_t wavelet_size, size_t wavelet_count,               
+                          f_type *d_coeff, 
                           size_t *src_points_interval, size_t src_points_interval_size,
-                          f_type *src_points_values, size_t src_points_values_size,
+                          f_type *d_src_points_values, size_t src_points_values_size,
                           size_t *src_points_values_offset,
                           size_t num_sources,
                           size_t nz, size_t nx, size_t ny, f_type dz, f_type dx, f_type dy,
@@ -347,7 +347,7 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
     gettimeofday(&time_start, NULL);
 
     // set u with current snapshot    
-    #pragma omp target teams distribute parallel for collapse(3) device(device_id) is_device_ptr(u, snapshot_d_prev, snapshot_d_current, velocity, damp, coeff, src_points_interval, src_points_values, src_points_values_offset, wavelet)
+    #pragma omp target teams distribute parallel for collapse(3) device(device_id) is_device_ptr(u, snapshot_d_prev, snapshot_d_current, d_velocity, d_damp, d_wavelet, d_coeff, src_points_interval, d_src_points_values, src_points_values_offset, top_u, bottom_u)
     for(size_t i = 0; i < nz; i++){
         for(size_t j = 0; j < nx; j++){
             for(size_t k = 0; k < ny; k++){
@@ -382,7 +382,7 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
         if(device_id == NUM_DEVICES-1)
             i_fim = nz;
 
-        #pragma omp target teams distribute parallel for collapse(3) device(device_id) is_device_ptr(u, velocity, damp, coeff, src_points_interval, src_points_values, src_points_values_offset, wavelet)
+        #pragma omp target teams distribute parallel for collapse(3) device(device_id) is_device_ptr(u, snapshot_d_prev, snapshot_d_current, d_velocity, d_damp, d_wavelet, d_coeff, src_points_interval, d_src_points_values, src_points_values_offset, top_u, bottom_u)
         for(size_t i = stencil_radius; i < nz - stencil_radius; i++) {
             for(size_t j = stencil_radius; j < nx - stencil_radius; j++) {
                 for(size_t k = stencil_radius; k < ny - stencil_radius; k++) {
@@ -396,30 +396,30 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
                     // stencil code to update grid
                     f_type value = 0.0;
 
-                    f_type sum_y = coeff[0] * u[current_u];
-                    f_type sum_x = coeff[0] * u[current_u];
-                    f_type sum_z = coeff[0] * u[current_u];
+                    f_type sum_y = d_coeff[0] * u[current_u];
+                    f_type sum_x = d_coeff[0] * u[current_u];
+                    f_type sum_z = d_coeff[0] * u[current_u];
 
                     // radius of the stencil                    
                     for(size_t ir = 1; ir <= stencil_radius; ir++){
                         //neighbors in the Y direction
-                        sum_y += coeff[ir] * (u[current_u + ir] + u[current_u - ir]);
+                        sum_y += d_coeff[ir] * (u[current_u + ir] + u[current_u - ir]);
 
                         //neighbors in the X direction
-                        sum_x += coeff[ir] * (u[current_u + (ir * ny)] + u[current_u - (ir * ny)]);
+                        sum_x += d_coeff[ir] * (u[current_u + (ir * ny)] + u[current_u - (ir * ny)]);
 
                         //neighbors in the Z direction
-                        sum_z += coeff[ir] * (u[current_u + (ir * nx * ny)] + u[current_u - (ir * nx * ny)]);
+                        sum_z += d_coeff[ir] * (u[current_u + (ir * nx * ny)] + u[current_u - (ir * nx * ny)]);
                     }
 
                     value += sum_y/dySquared + sum_x/dxSquared + sum_z/dzSquared;
 
                     // parameter to be used
-                    f_type slowness = 1.0 / (velocity[domain_offset] * velocity[domain_offset]);
+                    f_type slowness = 1.0 / (d_velocity[domain_offset] * d_velocity[domain_offset]);
 
                     // denominator with damp coefficient
-                    f_type denominator = (1.0 + damp[domain_offset] * dt / 2);
-                    f_type numerator = (1.0 - damp[domain_offset] * dt / 2);
+                    f_type denominator = (1.0 + d_damp[domain_offset] * dt / 2);
+                    f_type numerator = (1.0 - d_damp[domain_offset] * dt / 2);
 
                     value *= (dtSquared / slowness) / denominator;
 
@@ -452,7 +452,7 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
             Section 2: add the source term
         */
         
-        #pragma omp target teams distribute parallel for device(device_id) is_device_ptr(u, velocity, damp, coeff, src_points_interval, src_points_values, src_points_values_offset, wavelet)
+        #pragma omp target teams distribute parallel for device(device_id) is_device_ptr(u, snapshot_d_prev, snapshot_d_current, d_velocity, d_damp, d_wavelet, d_coeff, src_points_interval, d_src_points_values, src_points_values_offset, top_u, bottom_u)
         // for each source
         for(size_t src = 0; src < num_sources; src++){
 
@@ -462,7 +462,7 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
                 wavelet_offset = (n-1) * num_sources + src;
             }
 
-            if(wavelet[wavelet_offset] != 0.0){
+            if(d_wavelet[wavelet_offset] != 0.0){
 
                 // each source has 6 (z_b, z_e, x_b, x_e, y_b, y_e) point intervals
                 size_t offset_src = src * 6;
@@ -502,19 +502,19 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
                         // for each source point in the Y axis                       
                         for(size_t k = src_y_begin; k <= src_y_end; k++){
 
-                            f_type kws = src_points_values[kws_index_z] * src_points_values[kws_index_x] * src_points_values[kws_index_y];
+                            f_type kws = d_src_points_values[kws_index_z] * d_src_points_values[kws_index_x] * d_src_points_values[kws_index_y];
 
                             // current source point in the grid
                             size_t domain_offset = (i * nx + j) * ny + k;
                             size_t next_u = next_t * domain_size + domain_offset;
 
                             // parameter to be used
-                            f_type slowness = 1.0 / (velocity[domain_offset] * velocity[domain_offset]);
+                            f_type slowness = 1.0 / (d_velocity[domain_offset] * d_velocity[domain_offset]);
 
                             // denominator with damp coefficient
-                            f_type denominator = (1.0 + damp[domain_offset] * dt / 2);
+                            f_type denominator = (1.0 + d_damp[domain_offset] * dt / 2);
 
-                            f_type value = dtSquared / slowness * kws * wavelet[wavelet_offset] / denominator;
+                            f_type value = dtSquared / slowness * kws * d_wavelet[wavelet_offset] / denominator;
                             
                             #pragma omp atomic             
                             u[next_u] += value;
@@ -774,8 +774,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                     // interval of grid points of the receiver in the Z axis
                     size_t rec_z_begin = d_rec_points_interval[offset_rec + 0];
                     size_t rec_z_end = d_rec_points_interval[offset_rec + 1];
-
-                    // interval of grid points of the receiver in the X axis
+                    
                     size_t rec_x_begin = d_rec_points_interval[offset_rec + 2];
                     size_t rec_x_end = d_rec_points_interval[offset_rec + 3];
 
@@ -822,8 +821,8 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                                 f_type value = dtSquared / slowness * kws * d_wavelet_adjoint[wavelet_offset] / denominator;
                                 
                                 #pragma omp atomic                            
-                                d_v[next_v] += value;
-                                printf("Caminhão %d\n", device_id);
+                                //TODO: fix
+                                //d_v[next_v] += value;
 
                                 kws_index_y++;
                             }
