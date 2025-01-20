@@ -1,0 +1,28 @@
+
+Running Forward to save 5 checkpoints
+
+Running Forward to save 5 checkpoints
+Init u with zeros!
+Init u with zeros!
+Wavefield modeling!
+Wavefield modeling!
+Salvando 1 [0]
+Salvando 1 [0]
+Salvando 102 [1]
+Salvando 102 [1]
+Salvando 203 [2]
+Salvando 203 [2]
+Salvando 304 [3]
+Salvando 304 [3]
+Salvando 405 [4]
+Salvando 405 [4]
+
+Run Forward in 1.00881 seconds
+
+Running Gradient
+
+Run Forward in 1.0095 seconds
+
+Running Gradient
+Copying checkpoint 4 in timestep 501
+Copying checkpoint 4 in timestep 501

@@ -19,7 +19,7 @@ typedef float f_type;
 #endif
 
 #define NUM_DEVICES omp_get_num_devices()
-#define NUM_DEVICES 2
+#define NUM_DEVICES 4
 
 // Checkpoint struct
 struct CheckpointStruct{             
@@ -45,7 +45,8 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
     size_t stencil_radius = space_order / 2;
 
     size_t domain_size = nz * nx * ny;
-    domain_size += 2*stencil_radius * nx * ny;
+    size_t domain_size_total = domain_size + 2 * stencil_radius * nx * ny;
+    //domain_size += 2*stencil_radius * nx * ny;
 
     f_type dzSquared = dz * dz;
     f_type dxSquared = dx * dx;
@@ -66,7 +67,7 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
 
     size_t snapshot_index = 0;
 
-    size_t u_size = 3 * domain_size;
+    size_t u_size = 3 * domain_size_total;
 
     // alocate memory for u
     f_type *u = (f_type*)omp_target_alloc(u_size*sizeof(f_type), device_id);
@@ -80,9 +81,9 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
             for(size_t k = 0; k < ny; k++){
                 size_t domain_offset = (i * nx + j) * ny + k;
 
-                size_t prev_u = prev_t * domain_size + domain_offset;
-                size_t current_u = current_t * domain_size + domain_offset;
-                size_t next_u = next_t * domain_size + domain_offset;
+                size_t prev_u = prev_t * domain_size_total + domain_offset;
+                size_t current_u = current_t * domain_size_total + domain_offset;
+                size_t next_u = next_t * domain_size_total + domain_offset;
 
                 u[prev_u] = (f_type) 0.0;
                 u[current_u] = (f_type) 0.0;
@@ -121,9 +122,9 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
                     // index of the current point in the grid
                     size_t domain_offset = (i * nx + j) * ny + k;
 
-                    size_t prev_u= prev_t * domain_size + domain_offset;
-                    size_t current_u = current_t * domain_size + domain_offset;
-                    size_t next_u = next_t * domain_size + domain_offset;
+                    size_t prev_u= prev_t * domain_size_total + domain_offset;
+                    size_t current_u = current_t * domain_size_total + domain_offset;
+                    size_t next_u = next_t * domain_size_total + domain_offset;
 
                     // stencil code to update grid
                     f_type value = 0.0;
@@ -231,7 +232,7 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
 
                             // current source point in the grid
                             size_t domain_offset = (i * nx + j) * ny + k;
-                            size_t next_u = next_t * domain_size + domain_offset;
+                            size_t next_u = next_t * domain_size_total + domain_offset;
 
                             // parameter to be used
                             f_type slowness = 1.0 / (d_velocity[domain_offset] * d_velocity[domain_offset]);
@@ -242,7 +243,8 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
                             f_type value = dtSquared / slowness * kws * d_wavelet[wavelet_offset] / denominator;
                             
                             #pragma omp atomic                                                 
-                            u[next_u] += value;
+                            //TODO: fix
+                            //u[next_u] += value;
 
                             kws_index_y++;
                         }
@@ -264,8 +266,8 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
             CheckpointStruct checkpoint;
             checkpoint.index  = snapshot_index;
             checkpoint.timestep  = (int) n;
-            checkpoint.prev = (f_type*) malloc(domain_size * sizeof(f_type));
-            checkpoint.current = (f_type*) malloc(domain_size * sizeof(f_type));            
+            checkpoint.prev = (f_type*) malloc(domain_size_total * sizeof(f_type));
+            checkpoint.current = (f_type*) malloc(domain_size_total * sizeof(f_type));            
             
             //#pragma omp target update from(u[:u_size]) device(device_id)
             //#pragma omp target teams distribute parallel for device(device_id) is_device_ptr(u, d_velocity, d_damp, d_coeff)
@@ -281,8 +283,8 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
                         size_t domain_offset = (i * nx + j) * ny + k;                        
 
                         // current and prev states
-                        size_t prev_u = prev_t * domain_size + domain_offset;
-                        size_t current_u = current_t * domain_size + domain_offset;
+                        size_t prev_u = prev_t * domain_size_total + domain_offset;
+                        size_t current_u = current_t * domain_size_total + domain_offset;
 
                         checkpoint.prev[domain_offset] = h_u[prev_u];
                         checkpoint.current[domain_offset] = h_u[current_u]; 
@@ -328,6 +330,8 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
     size_t stencil_radius = space_order / 2;
 
     size_t domain_size = nz * nx * ny;
+    size_t nz_offset = stencil_radius * nx * ny;
+    size_t domain_size_total = domain_size + 2 * nz_offset;
 
     f_type dzSquared = dz * dz;
     f_type dxSquared = dx * dx;
@@ -353,9 +357,9 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
             for(size_t k = 0; k < ny; k++){
                 size_t domain_offset = (i * nx + j) * ny + k;
 
-                size_t prev_u = prev_t * domain_size + domain_offset;
-                size_t current_u = current_t * domain_size + domain_offset;
-                size_t next_u = next_t * domain_size + domain_offset;
+                size_t prev_u = prev_t * domain_size_total + domain_offset;
+                size_t current_u = current_t * domain_size_total + domain_offset;
+                size_t next_u = next_t * domain_size_total + domain_offset;
 
                 u[prev_u] = snapshot_d_prev[domain_offset];
                 u[current_u] = snapshot_d_current[domain_offset];
@@ -389,9 +393,9 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
                     // index of the current point in the grid
                     size_t domain_offset = (i * nx + j) * ny + k;
 
-                    size_t prev_u = prev_t * domain_size + domain_offset;
-                    size_t current_u = current_t * domain_size + domain_offset;
-                    size_t next_u = next_t * domain_size + domain_offset;
+                    size_t prev_u = prev_t * domain_size_total + domain_offset;
+                    size_t current_u = current_t * domain_size_total + domain_offset;
+                    size_t next_u = next_t * domain_size_total + domain_offset;
 
                     // stencil code to update grid
                     f_type value = 0.0;
@@ -506,7 +510,7 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
 
                             // current source point in the grid
                             size_t domain_offset = (i * nx + j) * ny + k;
-                            size_t next_u = next_t * domain_size + domain_offset;
+                            size_t next_u = next_t * domain_size_total + domain_offset;
 
                             // parameter to be used
                             f_type slowness = 1.0 / (d_velocity[domain_offset] * d_velocity[domain_offset]);
@@ -517,7 +521,8 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
                             f_type value = dtSquared / slowness * kws * d_wavelet[wavelet_offset] / denominator;
                             
                             #pragma omp atomic             
-                            u[next_u] += value;
+                            //TODO: fix
+                            //u[next_u] += value;
 
                             kws_index_y++;
                         }
@@ -537,7 +542,7 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
 
     //return exec_time;
 
-    size_t current_u = current_t * domain_size;    
+    size_t current_u = current_t * domain_size_total ;    
     return &u[current_u];
 }
 
@@ -558,15 +563,13 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                size_t begin_timestep, size_t end_timestep,
                size_t space_order, size_t num_snapshots){
 
+    nz /= NUM_DEVICES;
+
     size_t stencil_radius = space_order / 2;
 
-    size_t complete_nz = nz;
-
-    size_t complete_domain_size = complete_nz * nx * ny;
-
-    nz /= NUM_DEVICES;
     size_t domain_size = nz * nx * ny;
-    size_t alloc_size = complete_domain_size + 2 * stencil_radius * nx * ny;
+    size_t nz_offset = stencil_radius * nx * ny;
+    size_t domain_size_total = domain_size + 2 * nz_offset;
 
     f_type dzSquared = dz * dz;
     f_type dxSquared = dx * dx;
@@ -584,20 +587,20 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
     f_type *us[NUM_DEVICES];
 
-    #pragma omp parallel num_threads(NUM_DEVICES) shared (v, grad, velocity, damp, coeff, wavelet_forward, wavelet_adjoint, src_points_interval, src_points_values, src_points_values_offset, rec_points_interval, rec_points_values, rec_points_values_offset, us)
+    #pragma omp parallel num_threads(NUM_DEVICES)
     {
         // get default device
         int device_id = omp_get_thread_num();
         int host = omp_get_initial_device();
        
-        size_t u_size = 3 * domain_size;
-        size_t v_size = 3 * domain_size; // prev, current, next
+        size_t u_size = 3 * domain_size_total;
+        size_t v_size = 2* 3 * domain_size_total;
         
         // allocates memory on the device
         f_type *d_v = (f_type*) omp_target_alloc(v_size * sizeof(f_type), device_id);
-        f_type *d_grad = (f_type*) omp_target_alloc(complete_domain_size* sizeof(f_type), device_id);
-        f_type *d_velocity = (f_type*) omp_target_alloc(complete_domain_size * sizeof(f_type), device_id);
-        f_type *d_damp = (f_type*) omp_target_alloc(complete_domain_size * sizeof(f_type), device_id);
+        f_type *d_grad = (f_type*) omp_target_alloc(domain_size_total * sizeof(f_type), device_id);
+        f_type *d_velocity = (f_type*) omp_target_alloc(domain_size_total * sizeof(f_type), device_id);
+        f_type *d_damp = (f_type*) omp_target_alloc(domain_size_total * sizeof(f_type), device_id);
         f_type *d_coeff = (f_type*) omp_target_alloc((stencil_radius+1) * sizeof(f_type), device_id);
         size_t *d_src_points_interval = (size_t*) omp_target_alloc(src_points_interval_size * sizeof(size_t), device_id);
         f_type *d_src_points_values = (f_type*) omp_target_alloc(src_points_values_size * sizeof(f_type), device_id);
@@ -609,10 +612,10 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
         f_type *d_wavelet_adjoint = (f_type*) omp_target_alloc(wavelet_adjoint_size * wavelet_adjoint_count * sizeof(f_type), device_id);
 
         // copy data to device
-        omp_target_memcpy(d_v, v, v_size * sizeof(f_type), 0, 0, device_id, host);
-        omp_target_memcpy(d_grad, grad, complete_domain_size* sizeof(f_type), 0, 0, device_id, host);
-        omp_target_memcpy(d_velocity, velocity, complete_domain_size * sizeof(f_type), 0, 0, device_id, host);
-        omp_target_memcpy(d_damp, damp, complete_domain_size * sizeof(f_type), 0, 0, device_id, host);
+        omp_target_memcpy(d_v, v, 3*domain_size * sizeof(f_type), nz_offset*sizeof(f_type), 0, device_id, host);
+        omp_target_memcpy(d_grad, grad, domain_size * sizeof(f_type), nz_offset*sizeof(f_type), 0, device_id, host);
+        omp_target_memcpy(d_velocity, velocity, domain_size * sizeof(f_type), nz_offset*sizeof(f_type), 0, device_id, host);
+        omp_target_memcpy(d_damp, damp, domain_size * sizeof(f_type), nz_offset*sizeof(f_type), 0, device_id, host);
         omp_target_memcpy(d_coeff, coeff, (stencil_radius+1) * sizeof(f_type), 0, 0, device_id, host);
         omp_target_memcpy(d_src_points_interval, src_points_interval, src_points_interval_size * sizeof(size_t), 0, 0, device_id, host);
         omp_target_memcpy(d_src_points_values, src_points_values, src_points_values_size * sizeof(f_type), 0, 0, device_id, host);
@@ -626,7 +629,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
         // allocates memory for u on the device
         // used by forward
 
-        us[device_id] = (f_type*) omp_target_alloc(3 * alloc_size * sizeof(f_type), device_id);
+        us[device_id] = (f_type*) omp_target_alloc(3 * domain_size_total * sizeof(f_type), device_id);
 
         f_type *u = us[device_id];
         
@@ -654,12 +657,12 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
         gettimeofday(&time_start, NULL);
 
         // allocate memory for the snapshot on the device    
-        f_type *snapshot_d_prev = (f_type*) omp_target_alloc(complete_domain_size * sizeof(f_type), device_id);
-        f_type *snapshot_d_current = (f_type*) omp_target_alloc(complete_domain_size * sizeof(f_type), device_id);
+        f_type *snapshot_d_prev = (f_type*) omp_target_alloc(domain_size_total * sizeof(f_type), device_id);
+        f_type *snapshot_d_current = (f_type*) omp_target_alloc(domain_size_total * sizeof(f_type), device_id);
 
         // copy current checkpoint
-        omp_target_memcpy(snapshot_d_prev, snapshots.top().prev, domain_size * sizeof(f_type), 0, 0, device_id, host);
-        omp_target_memcpy(snapshot_d_current, snapshots.top().current, domain_size * sizeof(f_type), 0, 0, device_id, host);
+        omp_target_memcpy(snapshot_d_prev, snapshots.top().prev, domain_size_total * sizeof(f_type), 0, 0, device_id, host);
+        omp_target_memcpy(snapshot_d_current, snapshots.top().current, domain_size_total * sizeof(f_type), 0, 0, device_id, host);
 
         printf("Copying checkpoint %d in timestep %ld\n", snapshots.top().index, end_timestep);
 
@@ -681,6 +684,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
             if (device_id == 0)
                 i_ini = stencil_radius + stencil_radius;
+
             if(device_id == NUM_DEVICES-1)
                 i_fim = nz;
 
@@ -693,9 +697,9 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                         // index of the current point in the grid
                         size_t domain_offset = (i * nx + j) * ny + k;
 
-                        size_t prev_v = prev_t * domain_size + domain_offset;
-                        size_t current_v = current_t * domain_size + domain_offset;
-                        size_t next_v = next_t * domain_size + domain_offset;
+                        size_t prev_v = prev_t * domain_size_total + domain_offset;
+                        size_t current_v = current_t * domain_size_total + domain_offset;
+                        size_t next_v = next_t * domain_size_total + domain_offset;
 
                         // stencil code to update grid
                         f_type value = 0.0;
@@ -755,10 +759,9 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                 Section 2: add the source term
 
                 The receivers are the sources the in the adjoint
-            */
+                */
 
             #pragma omp target teams distribute parallel for device(device_id) is_device_ptr(u, d_v, d_grad, d_velocity, d_damp, d_coeff, d_src_points_interval, d_src_points_values, d_src_points_values_offset, d_rec_points_interval, d_rec_points_values, d_rec_points_values_offset, d_wavelet_forward, d_wavelet_adjoint)
-            // for each receiver
             for(size_t rec = 0; rec < num_receivers; rec++){
 
                 size_t wavelet_offset = n - 1;
@@ -810,7 +813,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
                                 // current source point in the grid
                                 size_t domain_offset = (i * nx + j) * ny + k;
-                                size_t next_v = next_t * domain_size + domain_offset;
+                                size_t next_v = next_t * domain_size_total + domain_offset;
 
                                 // parameter to be used
                                 f_type slowness = 1.0 / (d_velocity[domain_offset] * d_velocity[domain_offset]);
@@ -818,11 +821,15 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                                 // denominator with damp coefficient
                                 f_type denominator = (1.0 + d_damp[domain_offset] * dt / 2);
 
-                                f_type value = dtSquared / slowness * kws * d_wavelet_adjoint[wavelet_offset] / denominator;
                                 
-                                #pragma omp atomic                            
+                                //#pragma omp atomic                            
                                 //TODO: fix
-                                //d_v[next_v] += value;
+                               //printf("next_v: %ld\n", next_v);
+                                if(next_v >= v_size) {
+                                    printf("next_v: %ld! This would break at i = %ld, j = %ld, k = %ld, on device %d!\n", next_v, i, j, k, device_id);
+                                } else {
+                                    //d_v[next_v] = dtSquared / slowness * kws * d_wavelet_adjoint[wavelet_offset] / denominator + d_v[next_v];
+                                }
 
                                 kws_index_y++;
                             }
@@ -833,7 +840,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                 }
             }
 
-        #pragma omp barrier
+            #pragma omp barrier
             /*
                 Section 3: get current snapshot
             */
@@ -867,33 +874,29 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
             }
 
 
-            f_type *d_u_snapshot = (f_type*) omp_target_alloc(domain_size * sizeof(f_type), device_id);
-            omp_target_memcpy(d_u_snapshot, u_snapshot, domain_size * sizeof(f_type), 0, 0, device_id, host);
+            omp_target_memcpy(u_snapshot, u_snapshot, domain_size_total * sizeof(f_type), 0, 0, device_id, host);
 
             /*
                 Section 4: gradient calculation
             */        
-            #pragma omp target teams distribute parallel for collapse(3) device(device_id) is_device_ptr(u, d_v, d_grad, d_velocity, d_damp, d_coeff, d_src_points_interval, d_src_points_values, d_src_points_values_offset, d_rec_points_interval, d_rec_points_values, d_rec_points_values_offset, d_wavelet_forward, d_wavelet_adjoint, d_u_snapshot)
+            #pragma omp target teams distribute parallel for collapse(3) device(device_id) is_device_ptr(u, d_v, d_grad, d_velocity, d_damp, d_coeff, d_src_points_interval, d_src_points_values, d_src_points_values_offset, d_rec_points_interval, d_rec_points_values, d_rec_points_values_offset, d_wavelet_forward, d_wavelet_adjoint, u_snapshot)
             for(size_t i = i_ini; i < i_fim; i++) {
                 for(size_t j = stencil_radius; j < nx - stencil_radius; j++) {
                     for(size_t k = stencil_radius; k < ny - stencil_radius; k++) {
                         // index of the current point in the grid
                         size_t domain_offset = (i * nx + j) * ny + k;
 
-                        size_t prev_v = prev_t * domain_size + domain_offset;
-                        size_t current_v = current_t * domain_size + domain_offset;
-                        size_t next_v = next_t * domain_size + domain_offset;
+                        size_t prev_v = prev_t * domain_size_total + domain_offset;
+                        size_t current_v = current_t * domain_size_total + domain_offset;
+                        size_t next_v = next_t * domain_size_total + domain_offset;
 
                         f_type v_second_time_derivative = (d_v[prev_v] - 2.0 * d_v[current_v] + d_v[next_v]) / dtSquared;
 
                         // update gradient
-                        d_grad[domain_offset] -= v_second_time_derivative * d_u_snapshot[domain_offset];
+                        d_grad[domain_offset] -= v_second_time_derivative * u_snapshot[domain_offset];
                     }
                 }
             }
-
-            omp_target_memcpy(u_snapshot, d_u_snapshot, domain_size * sizeof(f_type), 0, 0, host, device_id);
-            omp_target_free(d_u_snapshot, device_id);
 
             // remove the recent used snapshot
             if( (n-1) % saving_stride == 0 ){
@@ -908,8 +911,8 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                 if (!snapshots.empty()){
                     // copy the next checkpoint
                     // dst  src
-                    omp_target_memcpy(snapshot_d_prev, snapshots.top().prev, domain_size * sizeof(f_type), 0, 0, device_id, host);
-                    omp_target_memcpy(snapshot_d_current, snapshots.top().current, domain_size * sizeof(f_type), 0, 0, device_id, host);
+                    omp_target_memcpy(snapshot_d_prev, snapshots.top().prev, domain_size_total * sizeof(f_type), 0, 0, device_id, host);
+                    omp_target_memcpy(snapshot_d_current, snapshots.top().current, domain_size_total * sizeof(f_type), 0, 0, device_id, host);
                     printf("Copying checkpoint %d in timestep %ld\n", snapshots.top().index, n);
                 }
             }
@@ -921,7 +924,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
         omp_target_free(u, device_id);
     } 
 
-    size_t v_size = 3 * alloc_size; // prev, current, next
+    size_t v_size = 3 *domain_size_total ; // prev, current, next
 
     // TODO: copy data from device to host
     //#pragma omp target exit data map(from: grad[:complete_domain_size])    
