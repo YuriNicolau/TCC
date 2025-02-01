@@ -258,6 +258,7 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
         /*
             Section 4: save a snapshot
         */
+        f_type *h_u = NULL;
        if( (n-1) % saving_stride == 0 ){
 
             printf("Salvando %ld [%ld]\n", n, snapshot_index); 
@@ -269,10 +270,11 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
             checkpoint.prev = (f_type*) malloc(domain_size_total * sizeof(f_type));
             checkpoint.current = (f_type*) malloc(domain_size_total * sizeof(f_type));            
             
-            //#pragma omp target update from(u[:u_size]) device(device_id)
-            //#pragma omp target teams distribute parallel for device(device_id) is_device_ptr(u, d_velocity, d_damp, d_coeff)
+            if(h_u == NULL)
+                h_u = (f_type*) malloc(u_size * sizeof(f_type));
+            else
+                h_u = (f_type*) realloc(h_u, u_size * sizeof(f_type));
 
-            f_type *h_u = (f_type*) malloc(u_size * sizeof(f_type));
             omp_target_memcpy(h_u, u, u_size * sizeof(f_type), 0, 0, omp_get_initial_device(), device_id);
 
             for(size_t i = 0; i < nz; i++) {
@@ -292,12 +294,11 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
                 }
             }
 
-            free(h_u);
 
             snapshots.push(checkpoint);
             snapshot_index++;            
        }
-
+        free(h_u);
     }
 
     //#pragma omp target exit data map(delete: u[:u_size]) device(device_id)
@@ -522,7 +523,7 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
                             
                             #pragma omp atomic             
                             //TODO: fix
-                            //u[next_u] += value;
+                            u[0] += value;
 
                             kws_index_y++;
                         }
@@ -666,7 +667,6 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
         printf("Copying checkpoint %d in timestep %ld\n", snapshots.top().index, end_timestep);
 
-        
         // wavefield modeling
         for(size_t n = end_timestep; n >= begin_timestep; n--) {
 
@@ -921,7 +921,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
         omp_target_free(snapshot_d_prev, device_id);
         omp_target_free(snapshot_d_current, device_id);
-        omp_target_free(u, device_id);
+        //omp_target_free(u, device_id);
     } 
 
     size_t v_size = 3 *domain_size_total ; // prev, current, next
