@@ -64,7 +64,7 @@ compiler_options = {
     },
 
 
-    'multi-compresion': {
+    'multi-compression': {
         'cc': 'clang++',
         
         'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11\
