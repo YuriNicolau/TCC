@@ -10,6 +10,23 @@ using namespace std;
 
 typedef float f_type;
 
+
+#include "nvcomp/nvcomp.h"
+#include "nvcomp/nvcompManagerFactory.hpp"
+
+using namespace nvcomp;
+using namespace std;
+
+#define CUDA_CHECK(cond)                       \
+    do                                         \
+    {                                          \
+        cudaError_t error = cond;              \
+        if (error != cudaSuccess)              \
+        {                                      \
+            std::cerr << "Falha" << std::endl; \
+        }                                      \
+    } while (false)
+
 // use single (float) or double precision
 // according to the value passed in the compilation cmd
 #if defined(FLOAT)
@@ -25,10 +42,15 @@ size_t individual_domain_size   = 0;
 
 // Checkpoint struct
 struct CheckpointStruct{             
-  int index;
-  int timestep;  
+  size_t index;
+  size_t timestep;  
   f_type *prev;
   f_type *current;
+  size_t size_compressed_prev;
+  size_t size_compressed_current;
+  
+  CompressionConfig& configure_compression_prev;
+  CompressionConfig& configure_compression_cur;
 };     
 
 // Forward with snaphots saving
@@ -42,7 +64,10 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
                                        size_t nz, size_t nx, size_t ny, f_type dz, f_type dx, f_type dy,
                                        size_t saving_stride, f_type dt,
                                        size_t begin_timestep, size_t end_timestep,
-                                       size_t space_order, size_t num_snapshots, int device_id, f_type *top_u, f_type *bottom_u, f_type *u){
+                                       size_t space_order, size_t num_snapshots, int device_id, f_type *top_u, f_type *bottom_u, f_type *u,
+                                       uint8_t *snapshot_d_prev_compressed,  uint8_t *snapshot_d_cur_compressed,
+                                       BitcompManager& nvcomp_manager){
+
 
     size_t stencil_radius = space_order / 2;
 
@@ -255,36 +280,63 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
 
             printf("Salvando %ld [%ld]\n", n, snapshot_index); 
 
-            // create the checkpoint
-            CheckpointStruct checkpoint;
-            checkpoint.index  = snapshot_index;
-            checkpoint.timestep  = (int) n;
-            checkpoint.prev = (f_type*) malloc(3*individual_domain_size * sizeof(f_type));
-            checkpoint.current = (f_type*) malloc(3*individual_domain_size * sizeof(f_type));            
+            CompressionConfig compression_configure_prev = nvcomp_manager.configure_compression(individual_domain_size *sizeof(f_type));
+            CompressionConfig compression_configure_cur = nvcomp_manager.configure_compression(individual_domain_size *sizeof(f_type));
+
+            nvcomp_manager.compress((const uint8_t *) &u[prev_t * individual_domain_size], snapshot_d_prev_compressed, compression_configure_prev);
+            nvcomp_manager.compress((const uint8_t *) &u[current_t * individual_domain_size], snapshot_d_cur_compressed, compression_configure_cur);                
             
-            if(h_u == NULL)
-                h_u = (f_type*) malloc(3*individual_domain_size * sizeof(f_type));
-            else
-                h_u = (f_type*) realloc(h_u, 3*individual_domain_size * sizeof(f_type));
+            size_t size_compressed_prev = nvcomp_manager.get_compressed_output_size(snapshot_d_prev_compressed);
+            size_t size_compressed_cur = nvcomp_manager.get_compressed_output_size(snapshot_d_cur_compressed);
+         
+            //TODO 2: Colocar o tamanho da compactação na struct para descompressão
+            CheckpointStruct checkpoint = {snapshot_index, 
+                                           n,
+                                           (f_type*) malloc(size_compressed_prev), 
+                                           (f_type*) malloc(size_compressed_cur),
+                                            size_compressed_prev,
+                                            size_compressed_cur,
+                                            compression_configure_prev,
+                                            compression_configure_cur
+                                           };
 
-            omp_target_memcpy(h_u, u, 3*individual_domain_size * sizeof(f_type), 0, 0, omp_get_initial_device(), device_id);
 
-            for(size_t i = 0; i < individual_nz+2*stencil_radius; i++) {
-                for(size_t j = 0; j < nx; j++) {
-                    for(size_t k = 0; k < ny; k++) {
+            printf("Salva %3ld[%ld] ", n, snapshot_index); 
+            printf("size(prev_comp)= %8zu, ", checkpoint.size_compressed_prev);
+            printf("size(cur_comp)= %8zu, ", checkpoint.size_compressed_current);
+            printf("comp_ratio= %lf\n", domain_size *sizeof(f_type) / (double) checkpoint.size_compressed_current);
 
-                        // index of the current point in the grid
-                        size_t domain_offset = (i * nx + j) * ny + k;                        
 
-                        // current and prev states
-                        size_t prev_u = prev_t * individual_domain_size + domain_offset;
-                        size_t current_u = current_t * individual_domain_size + domain_offset;
+            // TODO 3: Tentar transferir para CPU o tamanho da compactação
+            // obtido no nvcomp_manager.get_compressed_output_size(gpu_comp_buffer)
 
-                        checkpoint.prev[domain_offset] = h_u[prev_u];
-                        checkpoint.current[domain_offset] = h_u[current_u]; 
-                    }
-                }
-            }
+            //TODO 5: Podemos utilizar cópia assincrona
+            CUDA_CHECK( cudaMemcpy(checkpoint.prev, snapshot_d_prev_compressed, checkpoint.size_compressed_prev, cudaMemcpyDeviceToHost)   );  
+            CUDA_CHECK( cudaMemcpy(checkpoint.current, snapshot_d_cur_compressed, checkpoint.size_compressed_current, cudaMemcpyDeviceToHost) );
+            
+            //if(h_u == NULL)
+            //    h_u = (f_type*) malloc(3*individual_domain_size * sizeof(f_type));
+            //else
+            //    h_u = (f_type*) realloc(h_u, 3*individual_domain_size * sizeof(f_type));
+
+            //omp_target_memcpy(h_u, u, 3*individual_domain_size * sizeof(f_type), 0, 0, omp_get_initial_device(), device_id);
+
+            //for(size_t i = 0; i < individual_nz+2*stencil_radius; i++) {
+            //    for(size_t j = 0; j < nx; j++) {
+            //        for(size_t k = 0; k < ny; k++) {
+
+            //            // index of the current point in the grid
+            //            size_t domain_offset = (i * nx + j) * ny + k;                        
+
+            //            // current and prev states
+            //            size_t prev_u = prev_t * individual_domain_size + domain_offset;
+            //            size_t current_u = current_t * individual_domain_size + domain_offset;
+
+            //            checkpoint.prev[domain_offset] = h_u[prev_u];
+            //            checkpoint.current[domain_offset] = h_u[current_u]; 
+            //        }
+            //    }
+            //}
 
 
             snapshots.push(checkpoint);
@@ -570,7 +622,48 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
        
         size_t u_size = 3 * individual_domain_size;
         size_t v_size = 3 * individual_domain_size;
-        
+
+        nvcompStatus_t final_status;
+        // TODO 1: Fix - 
+        // Prepare compression environment 
+        CUDA_CHECK( cudaSetDevice(device_id) );
+        cudaStream_t stream;
+        CUDA_CHECK(  cudaStreamCreate(&stream)  );
+        nvcompType_t data_type = NVCOMP_TYPE_INT;
+        BitcompManager nvcomp_manager{data_type, 0, stream, device_id};
+
+        size_t freeMem;
+        size_t totalMem;
+        CUDA_CHECK(cudaMemGetInfo(&freeMem, &totalMem));
+        if (freeMem <  individual_domain_size * sizeof(f_type)) {
+            std::cout << "Insufficient GPU memory to perform compression." << std::endl;
+            exit(1);
+        }
+
+        size_t comp_scratch_bytes = nvcomp_manager.get_required_scratch_buffer_size();
+        uint8_t* d_comp_scratch;
+        CUDA_CHECK(cudaMalloc(&d_comp_scratch, comp_scratch_bytes));
+        nvcomp_manager.set_scratch_buffer(d_comp_scratch);
+
+        // const int chunk_size = 1 << 16;
+        // nvcompType_t data_type = NVCOMP_TYPE_CHAR;
+
+        // LZ4Manager nvcomp_manager{chunk_size, data_type, stream};    
+
+        printf("domain_size = %zu\n", individual_domain_size *sizeof(f_type));
+        // printf("max_compressed_buffer_size = %ld\n", compression_configure.max_compressed_buffer_size);
+
+        uint8_t *snapshot_d_prev_compressed;
+        uint8_t *snapshot_d_cur_compressed;
+
+        //Alocate memory on GPU
+        CompressionConfig compression_configure_malloc = nvcomp_manager.configure_compression(individual_domain_size *sizeof(f_type));
+
+        CUDA_CHECK( cudaMalloc(&snapshot_d_prev_compressed, compression_configure_malloc.max_compressed_buffer_size) );
+        CUDA_CHECK( cudaMalloc(&snapshot_d_cur_compressed, compression_configure_malloc.max_compressed_buffer_size) );
+        printf("max size = %zu\n", compression_configure_malloc.max_compressed_buffer_size);
+
+
         // allocates memory on the device
         f_type *d_v =                           (f_type*) omp_target_alloc(v_size                                       * sizeof(f_type),   device_id);
         f_type *d_grad =                        (f_type*) omp_target_alloc((domain_size + 2*stencil_radius*nx*ny)       * sizeof(f_type),   device_id);
@@ -621,7 +714,9 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                                                             num_sources, num_receivers,
                                                             nz, nx, ny, dz, dx, dy, saving_stride, dt,
                                                             begin_timestep, end_timestep,
-                                                            space_order, num_snapshots, device_id, us[device_id-1], us[device_id+1], u);
+                                                            space_order, num_snapshots, device_id, us[device_id-1], us[device_id+1], u,
+                                                            snapshot_d_prev_compressed, snapshot_d_cur_compressed, 
+                                                            nvcomp_manager);    
         
 
         printf("\nRunning Gradient\n");
@@ -635,8 +730,30 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
         f_type *snapshot_d_current = (f_type*)  omp_target_alloc(3*individual_domain_size* sizeof(f_type), device_id);
 
         // copy current checkpoint
-        omp_target_memcpy(snapshot_d_prev,      snapshots.top().prev,       3*individual_domain_size * sizeof(f_type), 0, 0, device_id, host);
-        omp_target_memcpy(snapshot_d_current,   snapshots.top().current,    3*individual_domain_size * sizeof(f_type), 0, 0, device_id, host);
+        DecompressionConfig decompression_configure_prev = nvcomp_manager.configure_decompression(snapshot_d_prev_compressed);
+        DecompressionConfig decompression_configure_cur = nvcomp_manager.configure_decompression(snapshot_d_cur_compressed);
+        //TODO 4: Descomprimir os dados e colocar os dados reais nos snapshot_d_prev e snapshot_d_current
+
+        //#pragma omp target data use_device_ptr(snapshot_d_prev, snapshot_d_current)
+        {
+            CUDA_CHECK( cudaMemcpy(snapshot_d_prev_compressed, snapshots.top().prev, snapshots.top().size_compressed_prev, cudaMemcpyHostToDevice) );  
+            CUDA_CHECK( cudaMemcpy(snapshot_d_cur_compressed, snapshots.top().current, snapshots.top().size_compressed_current, cudaMemcpyHostToDevice) );
+
+            nvcomp_manager.decompress( (uint8_t *) snapshot_d_prev,  (const uint8_t *) snapshot_d_prev_compressed, decompression_configure_prev);
+
+            final_status = *decompression_configure_prev.get_status();
+            if(final_status != nvcompSuccess) {
+                throw std::runtime_error("Error na Descompressao 1.\n");
+            }
+
+            nvcomp_manager.decompress( (uint8_t *) snapshot_d_current,  (const uint8_t *) snapshot_d_cur_compressed, decompression_configure_cur);
+
+            final_status = *decompression_configure_cur.get_status();
+            if(final_status != nvcompSuccess) {
+                throw std::runtime_error("Error na Descompressao 1.\n");
+            }
+        }
+
 
         printf("Copying checkpoint %d in timestep %ld\n", snapshots.top().index, end_timestep);
 
@@ -858,13 +975,37 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                 cout << "-------------" << endl;
 
                 if (!snapshots.empty()){
-                    // copy the next checkpoint
-                    // dst  src
-                    omp_target_memcpy(snapshot_d_prev, snapshots.top().prev, individual_domain_size * sizeof(f_type), 0, 0, device_id, host);
-                    omp_target_memcpy(snapshot_d_current, snapshots.top().current, individual_domain_size * sizeof(f_type), 0, 0, device_id, host);
-                    printf("Copying checkpoint %d in timestep %ld\n", snapshots.top().index, n);
+                    DecompressionConfig decompression_configure_prev = nvcomp_manager.configure_decompression(snapshot_d_prev_compressed);
+                    DecompressionConfig decompression_configure_cur = nvcomp_manager.configure_decompression(snapshot_d_cur_compressed);
+
+                    //#pragma omp target data use_device_ptr(snapshot_d_prev, snapshot_d_current)
+                    {
+                        CUDA_CHECK( cudaMemcpy(snapshot_d_prev_compressed, snapshots.top().prev, snapshots.top().size_compressed_prev, cudaMemcpyHostToDevice) );  
+                        CUDA_CHECK( cudaMemcpy(snapshot_d_cur_compressed, snapshots.top().current, snapshots.top().size_compressed_current, cudaMemcpyHostToDevice) );
+                        nvcomp_manager.decompress( (uint8_t *) snapshot_d_prev,  (const uint8_t *) snapshot_d_prev_compressed, decompression_configure_prev);
+                        final_status = *decompression_configure_prev.get_status();
+                        if(final_status != nvcompSuccess) {
+                            throw std::runtime_error("Error na Descompressao 1.\n");
+                            exit(1);
+                        }
+
+                        nvcomp_manager.decompress( (uint8_t *) snapshot_d_current,  (const uint8_t *) snapshot_d_cur_compressed, decompression_configure_cur);
+                        final_status = *decompression_configure_cur.get_status();
+                        if(final_status != nvcompSuccess) {
+                            throw std::runtime_error("Error na Descompressao 1.\n");
+                            exit(1);
+                        }
+                    }
+
+
+                    printf("Extract chckpt %zu in timestep %zu size(comp)=%ld  size(decomp)=%zu  comp.ratio=%f \n", snapshots.top().index, n, snapshots.top().size_compressed_current, domain_size * sizeof(f_type), domain_size /(float) snapshots.top().size_compressed_current );
+
+
+                // omp_target_memcpy(snapshot_d_prev, snapshots.top().prev, domain_size * sizeof(f_type), 0, 0, device_id, host);
+                // omp_target_memcpy(snapshot_d_current, snapshots.top().current, domain_size * sizeof(f_type), 0, 0, device_id, host);
+                // printf("Copying checkpoint %d in timestep %ld\n", snapshots.top().index, n);
+            }            
                 }
-            }
 
         }
 
@@ -872,6 +1013,9 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
         omp_target_free(snapshot_d_current, device_id);
         omp_target_free(u, device_id);
         omp_target_memcpy(grad, us[device_id], individual_nz * nx * ny * sizeof(f_type), 0, stencil_radius*nx*ny, host, device_id);
+        CUDA_CHECK( cudaStreamDestroy(stream) ); 
+        CUDA_CHECK( cudaFree(snapshot_d_prev_compressed) );
+        CUDA_CHECK( cudaFree(snapshot_d_cur_compressed) );    
     } 
     // get the end time
     gettimeofday(&time_end, NULL);

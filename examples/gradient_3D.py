@@ -62,10 +62,28 @@ compiler_options = {
                    
         'path': '../simwave/kernel/backend/c_code/multi/gradient.cpp'
     },
+
+
+    'multi-compression': {
+        'cc': 'clang++',
+        
+        'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11\
+                   -shared -fopenmp-targets=nvptx64-nvidia-cuda \
+                   -Xopenmp-target -march=sm_70 \
+                   -DGPU_OPENMP -g \
+                   -L/usr/local/cuda/lib64 -lcudart \
+                   -I/usr/local/cuda/targets/x86_64-linux/include \
+                   -isystem ../simwave/kernel/backend/include \
+                   -rpath ../simwave/kernel/backend/lib \
+                    ../simwave/kernel/backend/lib/libnvcomp.so',
+
+                   
+        'path': '../simwave/kernel/backend/c_code/multi-compression/gradient.cpp'
+    },
     
 }
 
-selected_compiler = compiler_options['multi']
+selected_compiler = compiler_options['multi-compression']
 
 
 def create_solver(velocity_model):
