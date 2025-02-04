@@ -1,0 +1,4 @@
+clang++ -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target -march=sm_61 wave.cpp -o wave
+
+clang++ -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target -march=sm_70 -L/usr/local/cuda/lib64/ -lcudart -L../../lib/ -lnvcomp compressor.o wave.cpp -o wave
+clang++ -c -o compressor.o compressor.cpp -fPIC
