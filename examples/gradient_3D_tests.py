@@ -5,7 +5,7 @@ from simwave import (
 import numpy as np
 
 # domain size (meters) in each axis
-domain_size = 500
+domain_size = 2000
 
 # grid spacing in each axis
 spacing = 10
@@ -58,9 +58,7 @@ compiler_options = {
         'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11\
                    -shared -fopenmp-targets=nvptx64-nvidia-cuda \
                    -Xopenmp-target -march=sm_70 \
-                   -L/usr/local/cuda/lib64 -lcudart \
-                   -I/usr/local/cuda/targets/x86_64-linux/include \
-                   -DGPU_OPENMP -g',
+                   -DGPU_OPENMP -shared -I/usr/local/cuda/include -L/usr/local/cuda/lib64 -lcudart -g',
                    
         'path': '../simwave/kernel/backend/c_code/multi/gradient.cpp'
     },
@@ -85,7 +83,7 @@ compiler_options = {
     
 }
 
-selected_compiler = compiler_options['multi-compression']
+selected_compiler = compiler_options['compression']
 
 
 def create_solver(velocity_model):
@@ -211,23 +209,38 @@ def camembert_velocity_model(grid_size, radius):
     return vel
 
 
+possible_domain_sizes = {500, 1000, 2000, 3000}
+possible_space_orders = {2,4,8}
+possible_compilers = {'no-compression', 'multi', 'compression', 'multi-compression'}
+
 if __name__ == "__main__":
 
-    grid_size = domain_size // spacing + 1
 
-    # True velocity model
-    # Camembert model
-    tru_vel = camembert_velocity_model(grid_size, radius=10)
+    for sel_comp in compiler_options:
+        for sel_domain_size in possible_domain_sizes:
+            for sel_space_order in possible_space_orders:
+                selected_compiler = compiler_options[sel_comp]
+                domain_size = sel_domain_size
+                space_order = sel_space_order
 
-    # Smooth velocity model
-    smooth_vel = np.zeros(shape=(grid_size, grid_size, grid_size), dtype=dtype)
-    smooth_vel[:] = 2500
+                print("selected_compiler  = " + str(selected_compiler))
+                print("domain_size = " + str(domain_size))
+                print("space_order = " + str(space_order))
 
-    # calculate the true (observed) seismogram
-    recv_true = calculate_true_seimogram(velocity_model=tru_vel)
+                grid_size = domain_size // spacing + 1
 
-    # compute the adjoint and gradient
-    grad = compute_gradient(velocity_model=smooth_vel, recv_true=recv_true)
+                # True velocity model
+                # Camembert model
+                tru_vel = camembert_velocity_model(grid_size, radius=10)
 
-    plot_velocity_model(grad[50, :, :], file_name="grad")
+                # Smooth velocity model
+                smooth_vel = np.zeros(shape=(grid_size, grid_size, grid_size), dtype=dtype)
+                smooth_vel[:] = 2500
 
+                # calculate the true (observed) seismogram
+                recv_true = calculate_true_seimogram(velocity_model=tru_vel)
+
+                # compute the adjoint and gradient
+                grad = compute_gradient(velocity_model=smooth_vel, recv_true=recv_true)
+
+                plot_velocity_model(grad[50, :, :], file_name="grad")

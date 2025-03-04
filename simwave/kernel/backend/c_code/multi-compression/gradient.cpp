@@ -181,11 +181,19 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
 
         #pragma omp barrier
         if (device_id > 0) {
-            omp_target_memcpy(top_u, u, stencil_radius * nx * ny * sizeof(f_type), (individual_nz + stencil_radius) * nx * ny * sizeof(f_type), stencil_radius * nx * ny * sizeof(f_type), device_id - 1, device_id);
+            cudaMemcpyPeer(top_u + (individual_nz + stencil_radius) * nx * ny * sizeof(f_type), //Dst
+                    device_id-1,																//Dst device
+                    u + stencil_radius * nx * ny * sizeof(f_type),							  	//Src
+                    device_id,																  	//Src device
+                    stencil_radius * nx * ny * sizeof(f_type));								 	//Size
         }
 
         if (device_id < NUM_DEVICES - 1) {
-            omp_target_memcpy(bottom_u, u, stencil_radius * nx * ny * sizeof(f_type), 0, individual_nz * nx * ny * sizeof(f_type), device_id + 1, device_id);
+            cudaMemcpyPeer(bottom_u, 							//Dst
+                    device_id+1,									//Dst device
+                    u + individual_nz * nx * ny * sizeof(f_type), 	//Src
+                    device_id,									 	//Src device
+                    stencil_radius * nx * ny * sizeof(f_type));	//Size
         }
 
         #pragma omp barrier
@@ -314,31 +322,6 @@ stack<CheckpointStruct> forward_saving(f_type *d_velocity, f_type *d_damp,
             CUDA_CHECK( cudaMemcpy(checkpoint.prev, snapshot_d_prev_compressed, checkpoint.size_compressed_prev, cudaMemcpyDeviceToHost)   );  
             CUDA_CHECK( cudaMemcpy(checkpoint.current, snapshot_d_cur_compressed, checkpoint.size_compressed_current, cudaMemcpyDeviceToHost) );
             
-            //if(h_u == NULL)
-            //    h_u = (f_type*) malloc(3*individual_domain_size * sizeof(f_type));
-            //else
-            //    h_u = (f_type*) realloc(h_u, 3*individual_domain_size * sizeof(f_type));
-
-            //omp_target_memcpy(h_u, u, 3*individual_domain_size * sizeof(f_type), 0, 0, omp_get_initial_device(), device_id);
-
-            //for(size_t i = 0; i < individual_nz+2*stencil_radius; i++) {
-            //    for(size_t j = 0; j < nx; j++) {
-            //        for(size_t k = 0; k < ny; k++) {
-
-            //            // index of the current point in the grid
-            //            size_t domain_offset = (i * nx + j) * ny + k;                        
-
-            //            // current and prev states
-            //            size_t prev_u = prev_t * individual_domain_size + domain_offset;
-            //            size_t current_u = current_t * individual_domain_size + domain_offset;
-
-            //            checkpoint.prev[domain_offset] = h_u[prev_u];
-            //            checkpoint.current[domain_offset] = h_u[current_u]; 
-            //        }
-            //    }
-            //}
-
-
             snapshots.push(checkpoint);
             snapshot_index++;            
        }
@@ -474,11 +457,19 @@ f_type* forward_checkpoint(f_type *u, f_type *snapshot_d_prev, f_type *snapshot_
 
         #pragma omp barrier
         if (device_id > 0) {
-            omp_target_memcpy( top_u, u, stencil_radius * nx * ny * sizeof(f_type), (individual_nz + stencil_radius) * nx * ny * sizeof(f_type), stencil_radius * nx * ny * sizeof(f_type), device_id - 1, device_id);
+            cudaMemcpyPeer(top_u + (individual_nz + stencil_radius) * nx * ny * sizeof(f_type), //Dst
+                    device_id-1,																//Dst device
+                    u + stencil_radius * nx * ny * sizeof(f_type),							  	//Src
+                    device_id,																  	//Src device
+                    stencil_radius * nx * ny * sizeof(f_type));								 	//Size
         }
 
         if (device_id < NUM_DEVICES - 1) {
-            omp_target_memcpy(bottom_u, u, stencil_radius * nx * ny * sizeof(f_type), 0, individual_nz * nx * ny * sizeof(f_type), device_id + 1, device_id);
+            cudaMemcpyPeer(bottom_u, 							//Dst
+                    device_id+1,									//Dst device
+                    u + individual_nz * nx * ny * sizeof(f_type), 	//Src
+                    device_id,									 	//Src device
+                    stencil_radius * nx * ny * sizeof(f_type));	//Size
         }
 
         /*
@@ -619,6 +610,7 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
     {
         // get default device
         int device_id = omp_get_thread_num();
+        cudaSetDevice(device_id);
        
         size_t u_size = 3 * individual_domain_size;
         size_t v_size = 3 * individual_domain_size;
@@ -665,39 +657,38 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
 
         // allocates memory on the device
-        f_type *d_v =                           (f_type*) omp_target_alloc(v_size                                       * sizeof(f_type),   device_id);
-        f_type *d_grad =                        (f_type*) omp_target_alloc((domain_size + 2*stencil_radius*nx*ny)       * sizeof(f_type),   device_id);
-        f_type *d_velocity =                    (f_type*) omp_target_alloc((domain_size + 2*stencil_radius*nx*ny)       * sizeof(f_type),   device_id);
-        f_type *d_damp =                        (f_type*) omp_target_alloc((domain_size + 2*stencil_radius*nx*ny)       * sizeof(f_type),   device_id);
-        f_type *d_coeff =                       (f_type*) omp_target_alloc((stencil_radius+1)                           * sizeof(f_type),   device_id);
-        size_t *d_src_points_interval =         (size_t*) omp_target_alloc(src_points_interval_size                     * sizeof(size_t),   device_id);
-        f_type *d_src_points_values =           (f_type*) omp_target_alloc(src_points_values_size                       * sizeof(f_type),   device_id);
-        size_t *d_src_points_values_offset =    (size_t*) omp_target_alloc(num_sources                                  * sizeof(size_t),   device_id);
-        size_t *d_rec_points_interval =         (size_t*) omp_target_alloc(rec_points_interval_size                     * sizeof(size_t),   device_id);
-        f_type *d_rec_points_values =           (f_type*) omp_target_alloc(rec_points_values_size                       * sizeof(f_type),   device_id);
-        size_t *d_rec_points_values_offset =    (size_t*) omp_target_alloc(num_receivers                                * sizeof(size_t),   device_id);
-        f_type *d_wavelet_forward =             (f_type*) omp_target_alloc(wavelet_forward_size * wavelet_forward_count * sizeof(f_type),   device_id);
-        f_type *d_wavelet_adjoint =             (f_type*) omp_target_alloc(wavelet_adjoint_size * wavelet_adjoint_count * sizeof(f_type),   device_id);
+		f_type *d_v;
+		f_type *d_grad;
+		f_type *d_velocity;
+		f_type *d_damp;
+		f_type *d_coeff;
+		size_t *d_src_points_interval;
+		f_type *d_src_points_values;
+		size_t *d_src_points_values_offset;
+		size_t *d_rec_points_interval;
+		f_type *d_rec_points_values;
+		size_t *d_rec_points_values_offset;
+		f_type *d_wavelet_forward;
+		f_type *d_wavelet_adjoint;
 
-        // copy data to device
-        omp_target_memcpy(d_v,		                    v,		                    individual_domain_size * sizeof(f_type),                            stencil_radius*nx*ny*sizeof(f_type),		    0,		 device_id,		 host);
-        omp_target_memcpy(d_grad,		                grad,		                individual_domain_size * sizeof(f_type),		                    stencil_radius*nx*ny*sizeof(f_type),		    0,		 device_id,		 host);
-        omp_target_memcpy(d_velocity,		            velocity,		            individual_domain_size * sizeof(f_type),		                    stencil_radius*nx*ny*sizeof(f_type),		    0,		 device_id,		 host);
-        omp_target_memcpy(d_damp,		                damp,		                individual_domain_size * sizeof(f_type),		                    stencil_radius*nx*ny*sizeof(f_type),		    0,		 device_id,		 host);
-        omp_target_memcpy(d_coeff,		                coeff,		                (stencil_radius+1) * sizeof(f_type),		                        0,		                                        0,		 device_id,		 host);
-        omp_target_memcpy(d_src_points_interval,        src_points_interval,	    src_points_interval_size * sizeof(size_t),	                        0,		                                        0,		 device_id,		 host);
-        omp_target_memcpy(d_src_points_values,		    src_points_values,		    src_points_values_size * sizeof(f_type),	                        0,		                                        0,		 device_id,		 host);
-        omp_target_memcpy(d_src_points_values_offset,	src_points_values_offset,	num_sources * sizeof(size_t),		                                0,		                                        0,		 device_id,		 host);
-        omp_target_memcpy(d_rec_points_interval,	    rec_points_interval,		rec_points_interval_size * sizeof(size_t),                          0,		                                        0,		 device_id,		 host);
-        omp_target_memcpy(d_rec_points_values,		    rec_points_values,		    rec_points_values_size * sizeof(f_type),	                        0,		                                        0,		 device_id,		 host);
-        omp_target_memcpy(d_rec_points_values_offset,   rec_points_values_offset,	num_receivers * sizeof(size_t),		                                0,                                              0,		 device_id,		 host);
-        omp_target_memcpy(d_wavelet_forward,		    wavelet_forward,		    wavelet_forward_size * wavelet_forward_count * sizeof(f_type),		0,		                                        0,		 device_id,		 host);
-        omp_target_memcpy(d_wavelet_adjoint,		    wavelet_adjoint,		    wavelet_adjoint_size * wavelet_adjoint_count * sizeof(f_type),		0,		                                        0,		 device_id,		 host);
+		cudaMalloc(&d_v,							v_size * sizeof(f_type));
+		cudaMalloc(&d_grad,							(domain_size + 2*stencil_radius*nx*ny) * sizeof(f_type));
+		cudaMalloc(&d_velocity,						(domain_size + 2*stencil_radius*nx*ny) * sizeof(f_type));
+		cudaMalloc(&d_damp,							(domain_size + 2*stencil_radius*nx*ny) * sizeof(f_type));
+		cudaMalloc(&d_coeff,						(stencil_radius+1) * sizeof(f_type));
+		cudaMalloc(&d_src_points_interval,			src_points_interval_size * sizeof(size_t));
+		cudaMalloc(&d_src_points_values,			src_points_values_size * sizeof(f_type));
+		cudaMalloc(&d_src_points_values_offset,		num_sources * sizeof(size_t));
+		cudaMalloc(&d_rec_points_interval,			rec_points_interval_size * sizeof(size_t));
+		cudaMalloc(&d_rec_points_values,			rec_points_values_size * sizeof(f_type));
+		cudaMalloc(&d_rec_points_values_offset,		num_receivers * sizeof(size_t));
+		cudaMalloc(&d_wavelet_forward,				wavelet_forward_size * wavelet_forward_count * sizeof(f_type));
+		cudaMalloc(&d_wavelet_adjoint,				wavelet_adjoint_size * wavelet_adjoint_count * sizeof(f_type));
 
         // allocates memory for u on the device
         // used by forward
 
-        us[device_id] = (f_type*) omp_target_alloc(u_size * sizeof(f_type), device_id);
+		cudaMalloc(&us[device_id], u_size * sizeof(f_type));
 
         f_type *u = us[device_id];
         /** run forward to calculate all checkpoints **/
@@ -726,8 +717,11 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
         #pragma omp barrier
         // allocate memory for the snapshot on the device    
-        f_type *snapshot_d_prev = (f_type*)     omp_target_alloc(3*individual_domain_size* sizeof(f_type), device_id);
-        f_type *snapshot_d_current = (f_type*)  omp_target_alloc(3*individual_domain_size* sizeof(f_type), device_id);
+        f_type *snapshot_d_prev;
+        f_type *snapshot_d_current;
+
+        cudaMalloc(&snapshot_d_prev_compressed, compression_configure_malloc.max_compressed_buffer_size);
+        cudaMalloc(&snapshot_d_cur_compressed, compression_configure_malloc.max_compressed_buffer_size);
 
         // copy current checkpoint
         DecompressionConfig decompression_configure_prev = nvcomp_manager.configure_decompression(snapshot_d_prev_compressed);
@@ -828,12 +822,20 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 
             #pragma omp barrier
 			if (device_id > 0) {
-                omp_target_memcpy(us[device_id - 1], us[device_id], stencil_radius * nx * ny * sizeof(f_type), (individual_nz + stencil_radius) * nx * ny * sizeof(f_type), stencil_radius * nx * ny * sizeof(f_type), device_id - 1, device_id);
-            }
-            if (device_id < NUM_DEVICES - 1) { 
-                omp_target_memcpy(us[device_id + 1], us[device_id], stencil_radius * nx * ny * sizeof(f_type), 0, individual_nz * nx * ny * sizeof(f_type), device_id + 1, device_id);
-            }
+				cudaMemcpyPeer(us[device_id-1] + (individual_nz + stencil_radius) * nx * ny * sizeof(f_type), //Dst
+						device_id-1,																//Dst device
+						u + stencil_radius * nx * ny * sizeof(f_type),							  	//Src
+						device_id,																  	//Src device
+						stencil_radius * nx * ny * sizeof(f_type));								 	//Size
+			}
 
+			if (device_id < NUM_DEVICES - 1) {
+				cudaMemcpyPeer(us[device_id+1], 							//Dst
+						device_id+1,									//Dst device
+						u + individual_nz * nx * ny * sizeof(f_type), 	//Src
+						device_id,									 	//Src device
+						stencil_radius * nx * ny * sizeof(f_type));	//Size
+			}
 			#pragma omp barrier
 
             /*
@@ -1001,18 +1003,15 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
                     printf("Extract chckpt %zu in timestep %zu size(comp)=%ld  size(decomp)=%zu  comp.ratio=%f \n", snapshots.top().index, n, snapshots.top().size_compressed_current, domain_size * sizeof(f_type), domain_size /(float) snapshots.top().size_compressed_current );
 
 
-                // omp_target_memcpy(snapshot_d_prev, snapshots.top().prev, domain_size * sizeof(f_type), 0, 0, device_id, host);
-                // omp_target_memcpy(snapshot_d_current, snapshots.top().current, domain_size * sizeof(f_type), 0, 0, device_id, host);
-                // printf("Copying checkpoint %d in timestep %ld\n", snapshots.top().index, n);
             }            
                 }
 
         }
-
-        omp_target_free(snapshot_d_prev, device_id);
-        omp_target_free(snapshot_d_current, device_id);
-        omp_target_free(u, device_id);
-        omp_target_memcpy(grad, us[device_id], individual_nz * nx * ny * sizeof(f_type), 0, stencil_radius*nx*ny, host, device_id);
+		cudaMemcpy(grad, d_grad + stencil_radius*nx*ny*sizeof(f_type), individual_domain_size * sizeof(f_type), cudaMemcpyDeviceToHost);
+		cudaFree(d_v);
+		cudaFree(d_grad);
+		cudaFree(d_velocity);
+		cudaFree(d_damp);
         CUDA_CHECK( cudaStreamDestroy(stream) ); 
         CUDA_CHECK( cudaFree(snapshot_d_prev_compressed) );
         CUDA_CHECK( cudaFree(snapshot_d_cur_compressed) );    

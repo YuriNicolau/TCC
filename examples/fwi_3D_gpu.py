@@ -379,6 +379,36 @@ if __name__ == '__main__':
                    
         'path': '../simwave/kernel/backend/c_code/normal/gradient.cpp'
     },
+
+        'multi': {
+        'cc': 'clang++',
+
+        'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11\
+                   -shared -fopenmp-targets=nvptx64-nvidia-cuda \
+                   -Xopenmp-target -march=sm_70 \
+                   -DGPU_OPENMP -g',
+
+        'path': '../simwave/kernel/backend/c_code/multi/gradient.cpp'
+    },
+
+
+    'multi-compression': {
+        'cc': 'clang++',
+
+        'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11\
+                   -shared -fopenmp-targets=nvptx64-nvidia-cuda \
+                   -Xopenmp-target -march=sm_70 \
+                   -DGPU_OPENMP -g \
+                   -L/usr/local/cuda/lib64 -lcudart \
+                   -I/usr/local/cuda/targets/x86_64-linux/include \
+                   -isystem ../simwave/kernel/backend/include \
+                   -rpath ../simwave/kernel/backend/lib \
+                    ../simwave/kernel/backend/lib/libnvcomp.so',
+
+
+        'path': '../simwave/kernel/backend/c_code/multi-compression/gradient.cpp'
+    },
+
     }
     space_options = {
         "bounding_box": (0, 13500, 0, 13500, 0, 4180),

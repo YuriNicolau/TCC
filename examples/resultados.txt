@@ -1,0 +1,390 @@
+domain_size = 36517316
+max size = 36555632
+
+Running Forward to save 5 checkpoints
+Salva   1[0] size(prev_comp)=    53600, size(cur_comp)=    53600, comp_ratio= 681.293209
+Salva 102[1] size(prev_comp)=  8930776, size(cur_comp)=  9042340, comp_ratio= 4.038481
+Salva 203[2] size(prev_comp)= 22257468, size(cur_comp)= 22381984, comp_ratio= 1.631550
+Salva 304[3] size(prev_comp)= 31252680, size(cur_comp)= 31295516, comp_ratio= 1.166855
+Salva 405[4] size(prev_comp)= 32256260, size(cur_comp)= 32240992, comp_ratio= 1.132636
+
+Run Forward in 0.926285 seconds
+
+Running Gradient
+Recovering checkpoint 4 in timestep 405
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        2.0G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 3 in timestep 405 size(comp)=31295516  size(decomp)=36517316  comp.ratio=0.291714 
+Recovering checkpoint 3 in timestep 304
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 2 in timestep 304 size(comp)=22381984  size(decomp)=36517316  comp.ratio=0.407887 
+Recovering checkpoint 2 in timestep 203
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 1 in timestep 203 size(comp)=9042340  size(decomp)=36517316  comp.ratio=1.009620 
+Recovering checkpoint 1 in timestep 102
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 0 in timestep 102 size(comp)=53600  size(decomp)=36517316  comp.ratio=170.323303 
+Recovering checkpoint 0 in timestep 1
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+domain_size = 33461708
+max size = 33497032
+
+Running Forward to save 5 checkpoints
+Salva   1[0] size(prev_comp)=    49124, size(cur_comp)=    49124, comp_ratio= 681.168227
+Salva 102[1] size(prev_comp)=  3349444, size(cur_comp)=  3410100, comp_ratio= 9.812530
+Salva 203[2] size(prev_comp)= 12458524, size(cur_comp)= 12576444, comp_ratio= 2.660665
+Salva 304[3] size(prev_comp)= 23890360, size(cur_comp)= 23982860, comp_ratio= 1.395234
+Salva 405[4] size(prev_comp)= 29109580, size(cur_comp)= 29127504, comp_ratio= 1.148801
+
+Run Forward in 0.814653 seconds
+
+Running Gradient
+Recovering checkpoint 4 in timestep 405
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        2.0G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 3 in timestep 405 size(comp)=23982860  size(decomp)=33461708  comp.ratio=0.348809 
+Recovering checkpoint 3 in timestep 304
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 2 in timestep 304 size(comp)=12576444  size(decomp)=33461708  comp.ratio=0.665166 
+Recovering checkpoint 2 in timestep 203
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 1 in timestep 203 size(comp)=3410100  size(decomp)=33461708  comp.ratio=2.453132 
+Recovering checkpoint 1 in timestep 102
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 0 in timestep 102 size(comp)=49124  size(decomp)=33461708  comp.ratio=170.292053 
+Recovering checkpoint 0 in timestep 1
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+domain_size = 34460500
+max size = 34497432
+
+Running Forward to save 5 checkpoints
+Salva   1[0] size(prev_comp)=    50588, size(cur_comp)=    50588, comp_ratio= 681.199099
+Salva 102[1] size(prev_comp)=  5189804, size(cur_comp)=  5270312, comp_ratio= 6.538607
+Salva 203[2] size(prev_comp)= 16213656, size(cur_comp)= 16350256, comp_ratio= 2.107643
+Salva 304[3] size(prev_comp)= 27193772, size(cur_comp)= 27280080, comp_ratio= 1.263211
+Salva 405[4] size(prev_comp)= 31042016, size(cur_comp)= 31051100, comp_ratio= 1.109800
+
+Run Forward in 0.916569 seconds
+
+Running Gradient
+Recovering checkpoint 4 in timestep 405
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        2.1G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 3 in timestep 405 size(comp)=27280080  size(decomp)=34460500  comp.ratio=0.315803 
+Recovering checkpoint 3 in timestep 304
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 2 in timestep 304 size(comp)=16350256  size(decomp)=34460500  comp.ratio=0.526911 
+Recovering checkpoint 2 in timestep 203
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 1 in timestep 203 size(comp)=5270312  size(decomp)=34460500  comp.ratio=1.634652 
+Recovering checkpoint 1 in timestep 102
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 0 in timestep 102 size(comp)=50588  size(decomp)=34460500  comp.ratio=170.299774 
+Recovering checkpoint 0 in timestep 1
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.9G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+selected_compiler  = {'cc': 'clang++', 'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11                   -shared -fopenmp-targets=nvptx64-nvidia-cuda                    -Xopenmp-target -march=sm_70                    -DGPU_OPENMP -DDEVICEID=3                    -L/usr/local/cuda/lib64 -lcudart                    -I/usr/local/cuda/targets/x86_64-linux/include                    -isystem ../simwave/kernel/backend/include                    -rpath ../simwave/kernel/backend/lib                     ../simwave/kernel/backend/lib/libnvcomp.so', 'path': '../simwave/kernel/backend/c_code/compression/gradient.cpp'}
+domain_size = 1000
+space_order = 8
+Model shape (with halo): (209, 209, 209)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Compilation command: clang++ ../simwave/kernel/backend/c_code/forward.cpp -O3 -fPIC -ffast-math -fopenmp -std=c++11                   -shared -fopenmp-targets=nvptx64-nvidia-cuda                    -Xopenmp-target -march=sm_70                    -DGPU_OPENMP -DDEVICEID=3                    -L/usr/local/cuda/lib64 -lcudart                    -I/usr/local/cuda/targets/x86_64-linux/include                    -isystem ../simwave/kernel/backend/include                    -rpath ../simwave/kernel/backend/lib                     ../simwave/kernel/backend/lib/libnvcomp.so -DFLOAT -o /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 1.103662 seconds.
+Velocity model saved in plots/true_velocity_model.png
+Wavefield saved in plots/true_final_wavefield.png
+Shot record saved in plots/true_seismogram.png
+Model shape (with halo): (209, 209, 209)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 0.923832 seconds.
+Velocity model saved in plots/smooth_velocity_model.png
+Wavefield saved in plots/smooth_final_wavefield.png
+Shot record saved in plots/smooth_seismogram.png
+Shot record saved in plots/residual_seismogram.png
+Calculating Checkpoints - Forward
+Model shape (with halo): (209, 209, 209)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Number of checkpoints: 5
+Snapshot stride: 101
+Snapshot indexes (5): [  1 102 203 304 405]
+Compilation command: clang++ ../simwave/kernel/backend/c_code/compression/gradient.cpp -O3 -fPIC -ffast-math -fopenmp -std=c++11                   -shared -fopenmp-targets=nvptx64-nvidia-cuda                    -Xopenmp-target -march=sm_70                    -DGPU_OPENMP -DDEVICEID=3                    -L/usr/local/cuda/lib64 -lcudart                    -I/usr/local/cuda/targets/x86_64-linux/include                    -isystem ../simwave/kernel/backend/include                    -rpath ../simwave/kernel/backend/lib                     ../simwave/kernel/backend/lib/libnvcomp.so -DFLOAT -o /root/omp/git/tcc/examples/tmp/887d408bf985e5f44dc86c169d21368714ba59b7.so
+Run gradient in 38.878149 seconds.
+Velocity model saved in plots/grad.png
+selected_compiler  = {'cc': 'clang++', 'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11                   -shared -fopenmp-targets=nvptx64-nvidia-cuda                    -Xopenmp-target -march=sm_70                    -DGPU_OPENMP -DDEVICEID=3                    -L/usr/local/cuda/lib64 -lcudart                    -I/usr/local/cuda/targets/x86_64-linux/include                    -isystem ../simwave/kernel/backend/include                    -rpath ../simwave/kernel/backend/lib                     ../simwave/kernel/backend/lib/libnvcomp.so', 'path': '../simwave/kernel/backend/c_code/compression/gradient.cpp'}
+domain_size = 1000
+space_order = 2
+Model shape (with halo): (203, 203, 203)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 0.894069 seconds.
+Velocity model saved in plots/true_velocity_model.png
+Wavefield saved in plots/true_final_wavefield.png
+Shot record saved in plots/true_seismogram.png
+Model shape (with halo): (203, 203, 203)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 0.902816 seconds.
+Velocity model saved in plots/smooth_velocity_model.png
+Wavefield saved in plots/smooth_final_wavefield.png
+Shot record saved in plots/smooth_seismogram.png
+Shot record saved in plots/residual_seismogram.png
+Calculating Checkpoints - Forward
+Model shape (with halo): (203, 203, 203)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Number of checkpoints: 5
+Snapshot stride: 101
+Snapshot indexes (5): [  1 102 203 304 405]
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/887d408bf985e5f44dc86c169d21368714ba59b7.so
+Run gradient in 39.441518 seconds.
+Velocity model saved in plots/grad.png
+selected_compiler  = {'cc': 'clang++', 'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11                   -shared -fopenmp-targets=nvptx64-nvidia-cuda                    -Xopenmp-target -march=sm_70                    -DGPU_OPENMP -DDEVICEID=3                    -L/usr/local/cuda/lib64 -lcudart                    -I/usr/local/cuda/targets/x86_64-linux/include                    -isystem ../simwave/kernel/backend/include                    -rpath ../simwave/kernel/backend/lib                     ../simwave/kernel/backend/lib/libnvcomp.so', 'path': '../simwave/kernel/backend/c_code/compression/gradient.cpp'}
+domain_size = 1000
+space_order = 4
+Model shape (with halo): (205, 205, 205)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 0.976131 seconds.
+Velocity model saved in plots/true_velocity_model.png
+Wavefield saved in plots/true_final_wavefield.png
+Shot record saved in plots/true_seismogram.png
+Model shape (with halo): (205, 205, 205)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 0.986817 seconds.
+Velocity model saved in plots/smooth_velocity_model.png
+Wavefield saved in plots/smooth_final_wavefield.png
+Shot record saved in plots/smooth_seismogram.png
+Shot record saved in plots/residual_seismogram.png
+Calculating Checkpoints - Forward
+Model shape (with halo): (205, 205, 205)
+Model shape: (101, 101, 101)
+Number of timesteps: 501
+Number of checkpoints: 5
+Snapshot stride: 101
+Snapshot indexes (5): [  1 102 203 304 405]
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/887d408bf985e5f44dc86c169d21368714ba59b7.so
+Run gradient in 39.519903 seconds.
+Velocity model saved in plots/grad.png
+selected_compiler  = {'cc': 'clang++', 'cflags': '-O3 -fPIC -ffast-math -fopenmp -std=c++11                   -shared -fopenmp-targets=nvptx64-nvidia-cuda                    -Xopenmp-target -march=sm_70                    -DGPU_OPENMP -DDEVICEID=3                    -L/usr/local/cuda/lib64 -lcudart                    -I/usr/local/cuda/targets/x86_64-linux/include                    -isystem ../simwave/kernel/backend/include                    -rpath ../simwave/kernel/backend/lib                     ../simwave/kernel/backend/lib/libnvcomp.so', 'path': '../simwave/kernel/backend/c_code/compression/gradient.cpp'}
+domain_size = 500
+space_order = 8
+Model shape (with halo): (109, 109, 109)
+Model shape: (51, 51, 51)
+Number of timesteps: 501
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 0.281229 seconds.
+Velocity model saved in plots/true_velocity_model.png
+Wavefield saved in plots/true_final_wavefield.png
+Shot record saved in plots/true_seismogram.png
+Model shape (with halo): (109, 109, 109)
+Model shape: (51, 51, 51)
+Number of timesteps: 501
+Shared object already compiled in: /root/omp/git/tcc/examples/tmp/4127f9bf039a462de1d419479d81958a361c6f7f.so
+Run forward in 0.277650 seconds.
+Velocity model saved in plots/smooth_velocity_model.png
+Wavefield saved in plots/smooth_final_wavefield.png
+Shot record saved in plots/smooth_seismogram.pngdomain_size = 5180116
+max size = 5190632
+
+Running Forward to save 5 checkpoints
+Salva   1[0] size(prev_comp)=     7700, size(cur_comp)=     7700, comp_ratio= 672.742338
+Salva 102[1] size(prev_comp)=  4348096, size(cur_comp)=  4351440, comp_ratio= 1.190437
+Salva 203[2] size(prev_comp)=  4369448, size(cur_comp)=  4367732, comp_ratio= 1.185997
+Salva 304[3] size(prev_comp)=  4188532, size(cur_comp)=  4190116, comp_ratio= 1.236270
+Salva 405[4] size(prev_comp)=  4268452, size(cur_comp)=  4270740, comp_ratio= 1.212932
+
+Run Forward in 0.215665 seconds
+
+Running Gradient
+Recovering checkpoint 4 in timestep 405
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.8G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 3 in timestep 405 size(comp)=4190116  size(decomp)=5180116  comp.ratio=0.309068 
+Recovering checkpoint 3 in timestep 304
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.8G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 2 in timestep 304 size(comp)=4367732  size(decomp)=5180116  comp.ratio=0.296499 
+Recovering checkpoint 2 in timestep 203
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.8G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 1 in timestep 203 size(comp)=4351440  size(decomp)=5180116  comp.ratio=0.297609 
+Recovering checkpoint 1 in timestep 102
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.8G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 0 in timestep 102 size(comp)=7700  size(decomp)=5180116  comp.ratio=168.185577 
+Recovering checkpoint 0 in timestep 1
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.8G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+domain_size = 4370908
+max size = 4378832
+
+Running Forward to save 5 checkpoints
+Salva   1[0] size(prev_comp)=     6512, size(cur_comp)=     6512, comp_ratio= 671.208231
+Salva 102[1] size(prev_comp)=  2810068, size(cur_comp)=  2840796, comp_ratio= 1.538621
+Salva 203[2] size(prev_comp)=  3925968, size(cur_comp)=  3926192, comp_ratio= 1.113269
+Salva 304[3] size(prev_comp)=  3930992, size(cur_comp)=  3932064, comp_ratio= 1.111607
+Salva 405[4] size(prev_comp)=  4021780, size(cur_comp)=  4024696, comp_ratio= 1.086022
+
+Run Forward in 0.207372 seconds
+
+Running Gradient
+Recovering checkpoint 4 in timestep 405
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 3 in timestep 405 size(comp)=3932064  size(decomp)=4370908  comp.ratio=0.277902 
+Recovering checkpoint 3 in timestep 304
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 2 in timestep 304 size(comp)=3926192  size(decomp)=4370908  comp.ratio=0.278317 
+Recovering checkpoint 2 in timestep 203
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 1 in timestep 203 size(comp)=2840796  size(decomp)=4370908  comp.ratio=0.384655 
+Recovering checkpoint 1 in timestep 102
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 0 in timestep 102 size(comp)=6512  size(decomp)=4370908  comp.ratio=167.802063 
+Recovering checkpoint 0 in timestep 1
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+domain_size = 4630500
+max size = 4641232
+
+Running Forward to save 5 checkpoints
+Salva   1[0] size(prev_comp)=     6896, size(cur_comp)=     6896, comp_ratio= 671.476218
+Salva 102[1] size(prev_comp)=  3674016, size(cur_comp)=  3693144, comp_ratio= 1.253810
+Salva 203[2] size(prev_comp)=  4201860, size(cur_comp)=  4201092, comp_ratio= 1.102213
+Salva 304[3] size(prev_comp)=  4034744, size(cur_comp)=  4035016, comp_ratio= 1.147579
+Salva 405[4] size(prev_comp)=  4113480, size(cur_comp)=  4116204, comp_ratio= 1.124944
+
+Run Forward in 0.221402 seconds
+
+Running Gradient
+Recovering checkpoint 4 in timestep 405
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 3 in timestep 405 size(comp)=4035016  size(decomp)=4630500  comp.ratio=0.286895 
+Recovering checkpoint 3 in timestep 304
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 2 in timestep 304 size(comp)=4201092  size(decomp)=4630500  comp.ratio=0.275553 
+Recovering checkpoint 2 in timestep 203
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 1 in timestep 203 size(comp)=3693144  size(decomp)=4630500  comp.ratio=0.313452 
+Recovering checkpoint 1 in timestep 102
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
+Extract chckpt 0 in timestep 102 size(comp)=6896  size(decomp)=4630500  comp.ratio=167.869049 
+Recovering checkpoint 0 in timestep 1
+---- RAM ----
+              total        used        free      shared  buff/cache   available
+Mem:           125G        1.7G        106G         16M         17G        122G
+Swap:          2.0G        172M        1.8G
+-------------
