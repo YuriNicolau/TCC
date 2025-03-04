@@ -9,3 +9,4 @@ simwave.egg-info/*
 .ipynb_checkpoints
 
 examples/tmp/
+tags
