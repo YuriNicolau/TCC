@@ -685,6 +685,20 @@ extern "C" double gradient(f_type *v, f_type *grad, f_type *velocity, f_type *da
 		cudaMalloc(&d_wavelet_forward,				wavelet_forward_size * wavelet_forward_count * sizeof(f_type));
 		cudaMalloc(&d_wavelet_adjoint,				wavelet_adjoint_size * wavelet_adjoint_count * sizeof(f_type));
 
+		// copy data to device
+		cudaMemcpy(d_v + stencil_radius*nx*ny*sizeof(f_type),			v,							individual_domain_size * sizeof(f_type),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_grad + stencil_radius*nx*ny*sizeof(f_type),		grad,						individual_domain_size * sizeof(f_type),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_velocity + stencil_radius*nx*ny*sizeof(f_type),	velocity,					individual_domain_size * sizeof(f_type),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_damp + stencil_radius*nx*ny*sizeof(f_type),		damp,						individual_domain_size * sizeof(f_type),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_coeff,												coeff,						(stencil_radius+1) * sizeof(f_type),							cudaMemcpyHostToDevice);
+		cudaMemcpy(d_src_points_interval,								src_points_interval,		src_points_interval_size * sizeof(size_t),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_src_points_values,									src_points_values,			src_points_values_size * sizeof(f_type),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_src_points_values_offset,							src_points_values_offset,	num_sources * sizeof(size_t),									cudaMemcpyHostToDevice);
+		cudaMemcpy(d_rec_points_interval,								rec_points_interval,		rec_points_interval_size * sizeof(size_t),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_rec_points_values,									rec_points_values,			rec_points_values_size * sizeof(f_type),						cudaMemcpyHostToDevice);
+		cudaMemcpy(d_rec_points_values_offset,							rec_points_values_offset,	num_receivers * sizeof(size_t),									cudaMemcpyHostToDevice);
+		cudaMemcpy(d_wavelet_forward,									wavelet_forward,			wavelet_forward_size * wavelet_forward_count * sizeof(f_type),	cudaMemcpyHostToDevice);
+		cudaMemcpy(d_wavelet_adjoint,									wavelet_adjoint,			wavelet_adjoint_size * wavelet_adjoint_count * sizeof(f_type),	cudaMemcpyHostToDevice);
         // allocates memory for u on the device
         // used by forward
 
